@@ -1,0 +1,21 @@
+{
+  "name": "invoice-generator",
+  "version": "1.0.0",
+  "description": "Professional Invoice Generator with Netlify Backend",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "netlify dev",
+    "build": "echo 'No build step needed'",
+    "functions:serve": "netlify functions:serve"
+  },
+  "dependencies": {
+    "mongodb": "^6.3.0"
+  },
+  "devDependencies": {
+    "netlify-cli": "^17.0.0"
+  },
+  "keywords": ["invoice", "netlify", "mongodb", "authentication"],
+  "author": "",
+  "license": "MIT"
+}

@@ -1,0 +1,1912 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Invoice Generator - Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        
+        * {
+            font-family: 'Inter', sans-serif;
+        }
+        
+        .sidebar-item {
+            transition: all 0.3s ease;
+        }
+        
+        .sidebar-item:hover {
+            background-color: #f1f5f9;
+            border-left: 4px solid #3b82f6;
+            padding-left: 20px;
+        }
+        
+        .sidebar-item.active {
+            background-color: #eff6ff;
+            border-left: 4px solid #3b82f6;
+            padding-left: 20px;
+        }
+        
+        .invoice-field {
+            transition: all 0.2s ease;
+        }
+        
+        .invoice-field:focus {
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            transition: all 0.3s ease;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(59, 130, 246, 0.3);
+        }
+        
+        .invoice-preview {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+        
+        @media (min-width: 2560px) {
+            .container-4k {
+                max-width: 2400px;
+                margin: 0 auto;
+            }
+        }
+        
+        /* Mobile responsive styles */
+        @media (max-width: 768px) {
+            .sidebar {
+                position: fixed;
+                left: -256px;
+                top: 0;
+                height: 100vh;
+                z-index: 50;
+                transition: left 0.3s ease;
+            }
+            
+            .sidebar.open {
+                left: 0;
+            }
+            
+            .main-content {
+                margin-left: 0;
+            }
+            
+            .mobile-menu-btn {
+                display: block;
+                position: fixed;
+                top: 1rem;
+                left: 1rem;
+                z-index: 40;
+                background: white;
+                border: 1px solid #e5e7eb;
+                border-radius: 0.5rem;
+                padding: 0.75rem;
+                box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            }
+            
+            .overlay {
+                display: none;
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: rgba(0, 0, 0, 0.5);
+                z-index: 45;
+            }
+            
+            .overlay.show {
+                display: block;
+            }
+            
+            .container-4k {
+                padding: 1rem;
+                padding-top: 4rem;
+            }
+            
+            .grid-cols-1.lg\\:grid-cols-2 {
+                grid-template-columns: 1fr;
+            }
+            
+            .grid-cols-1.md\\:grid-cols-2.lg\\:grid-cols-3 {
+                grid-template-columns: 1fr;
+            }
+            
+            /* Mobile table styles */
+            .overflow-x-auto {
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+            
+            table {
+                min-width: 600px;
+            }
+            
+            /* Mobile form styles */
+            .grid-cols-1.md\\:grid-cols-2 {
+                grid-template-columns: 1fr;
+            }
+            
+            .text-3xl {
+                font-size: 1.5rem;
+            }
+            
+            .text-xl {
+                font-size: 1.125rem;
+            }
+            
+            .p-8 {
+                padding: 1rem;
+            }
+            
+            .space-y-6 > * + * {
+                margin-top: 1rem;
+            }
+            
+            /* Mobile invoice preview */
+            .invoice-preview {
+                padding: 1rem;
+                font-size: 0.875rem;
+            }
+            
+            .invoice-preview table {
+                font-size: 0.75rem;
+            }
+            
+            .w-64 {
+                width: 100%;
+            }
+            
+            /* Mobile buttons */
+            .flex.space-x-4 {
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+            
+            .btn-primary {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+        
+        @media (min-width: 769px) {
+            .mobile-menu-btn {
+                display: none;
+            }
+            
+            .overlay {
+                display: none !important;
+            }
+            
+            .sidebar {
+                position: relative;
+                left: 0 !important;
+            }
+        }
+        
+        .fade-in {
+            animation: fadeIn 0.5s ease-in;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .page-content {
+            display: none;
+        }
+        
+        .page-content.active {
+            display: block;
+        }
+        
+        .page-transition {
+            animation: slideIn 0.3s ease-out;
+        }
+        
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(20px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <!-- Auth Container -->
+    <div id="authContainer" class="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+        <div class="max-w-md w-full space-y-8">
+            <!-- Logo -->
+            <div class="text-center">
+                <div class="w-16 h-16 bg-blue-600 rounded-lg flex items-center justify-center mx-auto mb-4">
+                    <i class="fas fa-file-invoice text-white text-2xl"></i>
+                </div>
+                <h2 class="text-3xl font-bold text-gray-900">InvoiceGen</h2>
+                <p class="mt-2 text-sm text-gray-600">Professional Invoice Management</p>
+            </div>
+
+            <!-- Login Form -->
+            <div id="loginForm" class="bg-white rounded-xl shadow-lg p-8">
+                <h3 class="text-2xl font-semibold text-gray-800 mb-6">Sign In</h3>
+                <form id="loginFormElement" class="space-y-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                        <input type="email" id="loginEmail" required class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500" placeholder="your@email.com">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Password</label>
+                        <input type="password" id="loginPassword" required class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500" placeholder="••••••••">
+                    </div>
+                    <button type="submit" class="w-full bg-blue-600 text-white py-3 rounded-lg font-medium hover:bg-blue-700 transition duration-200">
+                        Sign In
+                    </button>
+                </form>
+                <div class="mt-6 text-center">
+                    <p class="text-sm text-gray-600">
+                        Don't have an account? 
+                        <button onclick="showSignup()" class="text-blue-600 hover:text-blue-700 font-medium">Sign Up</button>
+                    </p>
+                </div>
+            </div>
+
+            <!-- Signup Form -->
+            <div id="signupForm" class="bg-white rounded-xl shadow-lg p-8 hidden">
+                <h3 class="text-2xl font-semibold text-gray-800 mb-6">Create Account</h3>
+                <form id="signupFormElement" class="space-y-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Full Name</label>
+                        <input type="text" id="signupName" required class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500" placeholder="John Doe">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Company Name (Optional)</label>
+                        <input type="text" id="signupCompany" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500" placeholder="Your Company">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                        <input type="email" id="signupEmail" required class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500" placeholder="your@email.com">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Password</label>
+                        <input type="password" id="signupPassword" required minlength="6" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500" placeholder="••••••••">
+                    </div>
+                    <button type="submit" class="w-full bg-blue-600 text-white py-3 rounded-lg font-medium hover:bg-blue-700 transition duration-200">
+                        Create Account
+                    </button>
+                </form>
+                <div class="mt-6 text-center">
+                    <p class="text-sm text-gray-600">
+                        Already have an account? 
+                        <button onclick="showLogin()" class="text-blue-600 hover:text-blue-700 font-medium">Sign In</button>
+                    </p>
+                </div>
+            </div>
+
+            <!-- Error/Success Messages -->
+            <div id="authMessage" class="hidden rounded-lg p-4 text-center"></div>
+        </div>
+    </div>
+
+    <!-- Main App (Hidden until login) -->
+    <div id="mainApp" class="hidden">
+        <!-- Mobile menu button -->
+        <button class="mobile-menu-btn" onclick="toggleSidebar()">
+            <i class="fas fa-bars text-gray-600"></i>
+        </button>
+        
+        <!-- Overlay for mobile -->
+        <div class="overlay" onclick="closeSidebar()"></div>
+        
+        <div class="flex h-screen overflow-hidden">
+            <!-- Sidebar -->
+            <aside class="sidebar w-64 bg-white shadow-lg flex flex-col">
+            <div class="p-6 border-b border-gray-200">
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
+                        <i class="fas fa-file-invoice text-white"></i>
+                    </div>
+                    <h1 class="text-xl font-semibold text-gray-800">InvoiceGen</h1>
+                </div>
+            </div>
+            
+            <nav class="flex-1 p-4">
+                <ul class="space-y-2">
+                    <li>
+                        <a href="#" data-page="dashboard" class="sidebar-item active flex items-center space-x-3 p-3 rounded-lg text-gray-700 hover:text-blue-600">
+                            <i class="fas fa-dashboard w-5"></i>
+                            <span class="font-medium">Dashboard</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#" data-page="invoices" class="sidebar-item flex items-center space-x-3 p-3 rounded-lg text-gray-700 hover:text-blue-600">
+                            <i class="fas fa-file-lines w-5"></i>
+                            <span class="font-medium">Invoices</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#" data-page="clients" class="sidebar-item flex items-center space-x-3 p-3 rounded-lg text-gray-700 hover:text-blue-600">
+                            <i class="fas fa-users w-5"></i>
+                            <span class="font-medium">Clients</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#" data-page="settings" class="sidebar-item flex items-center space-x-3 p-3 rounded-lg text-gray-700 hover:text-blue-600">
+                            <i class="fas fa-cog w-5"></i>
+                            <span class="font-medium">Settings</span>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+            
+            <!-- User Profile -->
+            <div class="p-4 border-t border-gray-200">
+                <div class="flex items-center space-x-3 mb-3">
+                    <img src="https://picsum.photos/seed/avatar/40/40.jpg" alt="User" class="w-10 h-10 rounded-full">
+                    <div>
+                        <p class="text-sm font-medium text-gray-700">John Doe</p>
+                        <p class="text-xs text-gray-500">john@example.com</p>
+                    </div>
+                </div>
+                <button onclick="logout()" class="w-full text-left px-3 py-2 rounded-lg text-red-600 hover:bg-red-50 flex items-center space-x-3">
+                    <i class="fas fa-sign-out-alt w-5"></i>
+                    <span class="font-medium">Logout</span>
+                </button>
+            </div>
+        </aside>
+        
+        <!-- Main Content -->
+        <main class="main-content flex-1 overflow-auto">
+            <div class="container-4k p-8">
+                <!-- Dashboard Page -->
+                <div id="dashboard-page" class="page-content active">
+                    <!-- Header -->
+                    <header class="mb-8 fade-in">
+                        <div class="flex justify-between items-center">
+                            <div>
+                                <h2 class="text-3xl font-bold text-gray-800">Invoice Generator</h2>
+                                <p class="text-gray-600 mt-2">Create and manage your professional invoices</p>
+                            </div>
+                            <button class="btn-primary px-6 py-3 text-white font-medium rounded-lg flex items-center space-x-2" onclick="navigateToPage('invoices')">
+                                <i class="fas fa-plus"></i>
+                                <span>New Invoice</span>
+                            </button>
+                        </div>
+                    </header>
+                    
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                        <!-- Invoice Editor -->
+                        <section class="fade-in">
+                            <div class="bg-white rounded-xl shadow-sm p-6">
+                                <h3 class="text-xl font-semibold text-gray-800 mb-6 flex items-center">
+                                    <i class="fas fa-edit text-blue-600 mr-3"></i>
+                                    Invoice Details
+                                </h3>
+                                
+                                <form id="invoiceForm" class="space-y-6">
+                                    <!-- Invoice Number -->
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Invoice Number</label>
+                                        <input type="text" id="invoiceNumber" class="invoice-field w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none" value="INV-001" placeholder="INV-001">
+                                    </div>
+                                    
+                                    <!-- Bill To Section -->
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Bill To</label>
+                                        <input type="text" id="clientName" class="invoice-field w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none mb-3" placeholder="Client Name">
+                                        <input type="text" id="clientEmail" class="invoice-field w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none mb-3" placeholder="Email Address">
+                                        <textarea id="clientAddress" class="invoice-field w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none resize-none" rows="3" placeholder="Client Address"></textarea>
+                                    </div>
+                                    
+                                    <!-- Items Section -->
+                                    <div>
+                                        <div class="flex justify-between items-center mb-4">
+                                            <label class="text-sm font-medium text-gray-700">Items</label>
+                                            <button type="button" onclick="addItem()" class="text-blue-600 hover:text-blue-700 text-sm font-medium">
+                                                <i class="fas fa-plus mr-1"></i>Add Item
+                                            </button>
+                                        </div>
+                                        <div id="itemsContainer" class="space-y-3">
+                                            <div class="item-row grid grid-cols-12 gap-3">
+                                                <input type="text" placeholder="Description" class="invoice-field col-span-6 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none">
+                                                <input type="number" placeholder="Qty" class="invoice-field col-span-2 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none">
+                                                <input type="number" placeholder="Price" class="invoice-field col-span-3 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none">
+                                                <button type="button" onclick="removeItem(this)" class="col-span-1 text-red-500 hover:text-red-700">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Additional Costs -->
+                                    <div class="space-y-4">
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 mb-2">Additional Costs</label>
+                                            
+                                            <!-- Tax Option -->
+                                            <div class="flex items-center justify-between p-3 border border-gray-200 rounded-lg">
+                                                <div class="flex items-center">
+                                                    <input type="checkbox" id="enableTax" class="mr-3" checked>
+                                                    <label for="enableTax" class="text-sm text-gray-700">Tax</label>
+                                                </div>
+                                                <div class="flex items-center space-x-2">
+                                                    <input type="number" id="taxRate" value="10" step="0.1" min="0" max="100" class="w-20 px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:border-blue-500">
+                                                    <span class="text-sm text-gray-600">%</span>
+                                                </div>
+                                            </div>
+                                            
+                                            <!-- Delivery/Shipping Fee -->
+                                            <div class="flex items-center justify-between p-3 border border-gray-200 rounded-lg mt-2">
+                                                <div class="flex items-center">
+                                                    <input type="checkbox" id="enableDelivery" class="mr-3">
+                                                    <label for="enableDelivery" class="text-sm text-gray-700">Delivery/Shipping Fee</label>
+                                                </div>
+                                                <div class="flex items-center space-x-2">
+                                                    <span class="text-sm text-gray-600" id="deliveryCurrencySymbol">$</span>
+                                                    <input type="number" id="deliveryFee" value="0" step="0.01" min="0" class="w-24 px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:border-blue-500">
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Notes -->
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Notes</label>
+                                        <textarea id="notes" class="invoice-field w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none resize-none" rows="3" placeholder="Additional notes or payment terms"></textarea>
+                                    </div>
+                                </form>
+                            </div>
+                        </section>
+                        
+                        <!-- Live Preview -->
+                        <section class="fade-in">
+                            <div class="bg-white rounded-xl shadow-sm p-6">
+                                <h3 class="text-xl font-semibold text-gray-800 mb-6 flex items-center">
+                                    <i class="fas fa-eye text-blue-600 mr-3"></i>
+                                    Live Preview
+                                </h3>
+                                
+                                <div class="invoice-preview p-8 border border-gray-200">
+                                    <!-- Invoice Header -->
+                                    <div class="flex justify-between items-start mb-8">
+                                        <div class="flex items-start space-x-4">
+                                            <div class="w-16 h-16 bg-gray-200 rounded-lg flex items-center justify-center">
+                                                <i class="fas fa-building text-gray-500 text-2xl"></i>
+                                            </div>
+                                            <div>
+                                                <h4 class="text-2xl font-bold text-gray-800">INVOICE</h4>
+                                                <p class="text-gray-600 mt-1" id="previewInvoiceNumber">#INV-001</p>
+                                            </div>
+                                        </div>
+                                        <div class="text-right">
+                                            <p class="text-sm text-gray-600">Date: <span id="currentDate"></span></p>
+                                            <p class="text-sm text-gray-600">Due: Upon receipt</p>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Company Info -->
+                                    <div class="mb-8">
+                                        <h5 class="font-semibold text-gray-800 mb-2">From:</h5>
+                                        <p class="text-gray-600">Your Company</p>
+                                        <p class="text-gray-600">123 Business Street</p>
+                                        <p class="text-gray-600">City, State 12345</p>
+                                        <p class="text-gray-600">contact@yourcompany.com</p>
+                                    </div>
+                                    
+                                    <!-- Bill To Preview -->
+                                    <div class="mb-8">
+                                        <h5 class="font-semibold text-gray-800 mb-2">Bill To:</h5>
+                                        <div id="previewBillTo">
+                                            <p class="text-gray-600">Client Name</p>
+                                            <p class="text-gray-600">Client Address</p>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Items Table -->
+                                    <div class="mb-8">
+                                        <table class="w-full">
+                                            <thead>
+                                                <tr class="border-b border-gray-300">
+                                                    <th class="text-left py-2 text-gray-700">Description</th>
+                                                    <th class="text-center py-2 text-gray-700">Qty</th>
+                                                    <th class="text-right py-2 text-gray-700">Price</th>
+                                                    <th class="text-right py-2 text-gray-700">Total</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="previewItems">
+                                                <tr class="border-b border-gray-200">
+                                                    <td class="py-3 text-gray-600">Item description</td>
+                                                    <td class="py-3 text-center text-gray-600">1</td>
+                                                    <td class="py-3 text-right text-gray-600">$0.00</td>
+                                                    <td class="py-3 text-right text-gray-600">$0.00</td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    
+                                    <!-- Total Section -->
+                                    <div class="flex justify-end">
+                                        <div class="w-64">
+                                            <div class="flex justify-between py-2 border-b border-gray-200">
+                                                <span class="text-gray-600">Subtotal:</span>
+                                                <span class="font-medium text-gray-800" id="subtotal">$0.00</span>
+                                            </div>
+                                            <div class="flex justify-between py-2 border-b border-gray-200 tax-row" id="taxRow">
+                                                <span class="text-gray-600">Tax (<span id="taxRateDisplay">10</span>%):</span>
+                                                <span class="font-medium text-gray-800" id="tax">$0.00</span>
+                                            </div>
+                                            <div class="flex justify-between py-2 border-b border-gray-200 delivery-row" id="deliveryRow">
+                                                <span class="text-gray-600">Delivery/Shipping:</span>
+                                                <span class="font-medium text-gray-800" id="delivery">$0.00</span>
+                                            </div>
+                                            <div class="flex justify-between py-3 text-lg font-bold text-gray-800">
+                                                <span>Total:</span>
+                                                <span id="total">$0.00</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Notes Preview -->
+                                    <div class="mt-8 pt-6 border-t border-gray-200">
+                                        <h5 class="font-semibold text-gray-800 mb-2">Notes:</h5>
+                                        <p class="text-gray-600" id="previewNotes">Thank you for your business!</p>
+                                    </div>
+                                </div>
+                                
+                                <!-- Action Buttons -->
+                                <div class="flex space-x-4 mt-6">
+                                    <button class="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                                        <i class="fas fa-download mr-2"></i>Download PDF
+                                    </button>
+                                    <button class="flex-1 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors">
+                                        <i class="fas fa-envelope mr-2"></i>Send Email
+                                    </button>
+                                </div>
+                            </div>
+                        </section>
+                    </div>
+                </div>
+                
+                <!-- Invoices Page -->
+                <div id="invoices-page" class="page-content">
+                    <header class="mb-8 fade-in">
+                        <div class="flex justify-between items-center">
+                            <div>
+                                <h2 class="text-3xl font-bold text-gray-800">Invoices</h2>
+                                <p class="text-gray-600 mt-2">Manage all your invoices in one place</p>
+                            </div>
+                            <button class="btn-primary px-6 py-3 text-white font-medium rounded-lg flex items-center space-x-2">
+                                <i class="fas fa-plus"></i>
+                                <span>Create Invoice</span>
+                            </button>
+                        </div>
+                    </header>
+                    
+                    <div class="bg-white rounded-xl shadow-sm p-6 fade-in">
+                        <div class="flex justify-between items-center mb-6">
+                            <div class="flex space-x-4">
+                                <button class="px-4 py-2 bg-blue-100 text-blue-700 rounded-lg font-medium">All</button>
+                                <button class="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg font-medium">Draft</button>
+                                <button class="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg font-medium">Sent</button>
+                                <button class="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg font-medium">Paid</button>
+                            </div>
+                            <div class="flex items-center space-x-3">
+                                <input type="text" placeholder="Search invoices..." class="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500">
+                                <button class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">
+                                    <i class="fas fa-filter"></i>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="overflow-x-auto">
+                            <table class="w-full">
+                                <thead>
+                                    <tr class="border-b border-gray-200">
+                                        <th class="text-left py-3 px-4 text-gray-700 font-medium">Invoice #</th>
+                                        <th class="text-left py-3 px-4 text-gray-700 font-medium">Client</th>
+                                        <th class="text-left py-3 px-4 text-gray-700 font-medium">Date</th>
+                                        <th class="text-left py-3 px-4 text-gray-700 font-medium">Due Date</th>
+                                        <th class="text-right py-3 px-4 text-gray-700 font-medium">Amount</th>
+                                        <th class="text-center py-3 px-4 text-gray-700 font-medium">Status</th>
+                                        <th class="text-center py-3 px-4 text-gray-700 font-medium">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr class="border-b border-gray-100 hover:bg-gray-50">
+                                        <td class="py-3 px-4">
+                                            <span class="font-medium text-gray-800">INV-001</span>
+                                        </td>
+                                        <td class="py-3 px-4 text-gray-600">Acme Corporation</td>
+                                        <td class="py-3 px-4 text-gray-600">Jan 15, 2024</td>
+                                        <td class="py-3 px-4 text-gray-600">Jan 30, 2024</td>
+                                        <td class="py-3 px-4 text-right font-medium text-gray-800">$2,500.00</td>
+                                        <td class="py-3 px-4 text-center">
+                                            <span class="px-2 py-1 bg-green-100 text-green-700 rounded-full text-xs font-medium">Paid</span>
+                                        </td>
+                                        <td class="py-3 px-4 text-center">
+                                            <button class="text-blue-600 hover:text-blue-700 mr-3">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                            <button class="text-gray-600 hover:text-gray-700 mr-3">
+                                                <i class="fas fa-edit"></i>
+                                            </button>
+                                            <button class="text-red-600 hover:text-red-700">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    <tr class="border-b border-gray-100 hover:bg-gray-50">
+                                        <td class="py-3 px-4">
+                                            <span class="font-medium text-gray-800">INV-002</span>
+                                        </td>
+                                        <td class="py-3 px-4 text-gray-600">Tech Solutions Inc</td>
+                                        <td class="py-3 px-4 text-gray-600">Jan 20, 2024</td>
+                                        <td class="py-3 px-4 text-gray-600">Feb 4, 2024</td>
+                                        <td class="py-3 px-4 text-right font-medium text-gray-800">$1,800.00</td>
+                                        <td class="py-3 px-4 text-center">
+                                            <span class="px-2 py-1 bg-yellow-100 text-yellow-700 rounded-full text-xs font-medium">Sent</span>
+                                        </td>
+                                        <td class="py-3 px-4 text-center">
+                                            <button class="text-blue-600 hover:text-blue-700 mr-3">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                            <button class="text-gray-600 hover:text-gray-700 mr-3">
+                                                <i class="fas fa-edit"></i>
+                                            </button>
+                                            <button class="text-red-600 hover:text-red-700">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    <tr class="border-b border-gray-100 hover:bg-gray-50">
+                                        <td class="py-3 px-4">
+                                            <span class="font-medium text-gray-800">INV-003</span>
+                                        </td>
+                                        <td class="py-3 px-4 text-gray-600">Global Enterprises</td>
+                                        <td class="py-3 px-4 text-gray-600">Jan 25, 2024</td>
+                                        <td class="py-3 px-4 text-gray-600">Feb 9, 2024</td>
+                                        <td class="py-3 px-4 text-right font-medium text-gray-800">$3,200.00</td>
+                                        <td class="py-3 px-4 text-center">
+                                            <span class="px-2 py-1 bg-gray-100 text-gray-700 rounded-full text-xs font-medium">Draft</span>
+                                        </td>
+                                        <td class="py-3 px-4 text-center">
+                                            <button class="text-blue-600 hover:text-blue-700 mr-3">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                            <button class="text-gray-600 hover:text-gray-700 mr-3">
+                                                <i class="fas fa-edit"></i>
+                                            </button>
+                                            <button class="text-red-600 hover:text-red-700">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Clients Page -->
+                <div id="clients-page" class="page-content">
+                    <header class="mb-8 fade-in">
+                        <div class="flex justify-between items-center">
+                            <div>
+                                <h2 class="text-3xl font-bold text-gray-800">Clients</h2>
+                                <p class="text-gray-600 mt-2">Manage your client database</p>
+                            </div>
+                            <button class="btn-primary px-6 py-3 text-white font-medium rounded-lg flex items-center space-x-2">
+                                <i class="fas fa-user-plus"></i>
+                                <span>Add Client</span>
+                            </button>
+                        </div>
+                    </header>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 fade-in">
+                        <div class="bg-white rounded-xl shadow-sm p-6 hover:shadow-md transition-shadow">
+                            <div class="flex items-start justify-between mb-4">
+                                <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                                    <i class="fas fa-building text-blue-600"></i>
+                                </div>
+                                <span class="px-2 py-1 bg-green-100 text-green-700 rounded-full text-xs font-medium">Active</span>
+                            </div>
+                            <h3 class="text-lg font-semibold text-gray-800 mb-2">Acme Corporation</h3>
+                            <p class="text-gray-600 text-sm mb-4">contact@acme.com<br>+1 (555) 123-4567</p>
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm text-gray-500">5 invoices</span>
+                                <div class="flex space-x-2">
+                                    <button class="text-blue-600 hover:text-blue-700">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button class="text-red-600 hover:text-red-700">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="bg-white rounded-xl shadow-sm p-6 hover:shadow-md transition-shadow">
+                            <div class="flex items-start justify-between mb-4">
+                                <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
+                                    <i class="fas fa-building text-purple-600"></i>
+                                </div>
+                                <span class="px-2 py-1 bg-green-100 text-green-700 rounded-full text-xs font-medium">Active</span>
+                            </div>
+                            <h3 class="text-lg font-semibold text-gray-800 mb-2">Tech Solutions Inc</h3>
+                            <p class="text-gray-600 text-sm mb-4">info@techsolutions.com<br>+1 (555) 234-5678</p>
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm text-gray-500">3 invoices</span>
+                                <div class="flex space-x-2">
+                                    <button class="text-blue-600 hover:text-blue-700">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button class="text-red-600 hover:text-red-700">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="bg-white rounded-xl shadow-sm p-6 hover:shadow-md transition-shadow">
+                            <div class="flex items-start justify-between mb-4">
+                                <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                                    <i class="fas fa-building text-green-600"></i>
+                                </div>
+                                <span class="px-2 py-1 bg-yellow-100 text-yellow-700 rounded-full text-xs font-medium">Inactive</span>
+                            </div>
+                            <h3 class="text-lg font-semibold text-gray-800 mb-2">Global Enterprises</h3>
+                            <p class="text-gray-600 text-sm mb-4">hello@global.com<br>+1 (555) 345-6789</p>
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm text-gray-500">2 invoices</span>
+                                <div class="flex space-x-2">
+                                    <button class="text-blue-600 hover:text-blue-700">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button class="text-red-600 hover:text-red-700">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Settings Page -->
+                <div id="settings-page" class="page-content">
+                    <header class="mb-8 fade-in">
+                        <div>
+                            <h2 class="text-3xl font-bold text-gray-800">Settings</h2>
+                            <p class="text-gray-600 mt-2">Manage your account and application preferences</p>
+                        </div>
+                    </header>
+                    
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                        <div class="lg:col-span-2 space-y-6">
+                            <!-- Company Information -->
+                            <div class="bg-white rounded-xl shadow-sm p-6 fade-in">
+                                <h3 class="text-xl font-semibold text-gray-800 mb-6">Company Information</h3>
+                                <div class="space-y-4">
+                                    <!-- Company Logo -->
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Company Logo</label>
+                                        <div class="flex items-center space-x-4">
+                                            <div id="settingsLogoPreview" class="w-20 h-20 bg-gray-200 rounded-lg flex items-center justify-center">
+                                                <i class="fas fa-building text-gray-500 text-2xl"></i>
+                                            </div>
+                                            <div>
+                                                <input type="file" id="settingsLogoUpload" accept="image/*" class="hidden">
+                                                <button type="button" onclick="document.getElementById('settingsLogoUpload').click()" class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 text-sm font-medium">
+                                                    <i class="fas fa-upload mr-2"></i>Upload Logo
+                                                </button>
+                                                <p class="text-xs text-gray-500 mt-1">This logo will appear on all invoices</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 mb-2">Company Name</label>
+                                            <input type="text" value="Your Company" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500">
+                                        </div>
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                                            <input type="email" value="contact@yourcompany.com" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500">
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Address</label>
+                                        <textarea rows="3" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500">123 Business Street
+City, State 12345</textarea>
+                                    </div>
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 mb-2">Phone</label>
+                                            <input type="tel" value="+1 (555) 000-0000" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500">
+                                        </div>
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 mb-2">Website</label>
+                                            <input type="url" value="www.yourcompany.com" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Invoice Settings -->
+                            <div class="bg-white rounded-xl shadow-sm p-6 fade-in">
+                                <h3 class="text-xl font-semibold text-gray-800 mb-6">Invoice Settings</h3>
+                                <div class="space-y-4">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Default Currency</label>
+                                        <select id="currencySelect" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500">
+                                            <option value="USD">USD - US Dollar ($)</option>
+                                            <option value="EUR">EUR - Euro (€)</option>
+                                            <option value="GBP">GBP - British Pound (£)</option>
+                                            <option value="GHS">GHS - Ghana Cedis (₵)</option>
+                                            <option value="NGN">NGN - Nigerian Naira (₦)</option>
+                                            <option value="KES">KES - Kenyan Shilling (KSh)</option>
+                                            <option value="ZAR">ZAR - South African Rand (R)</option>
+                                            <option value="CAD">CAD - Canadian Dollar (C$)</option>
+                                            <option value="AUD">AUD - Australian Dollar (A$)</option>
+                                            <option value="JPY">JPY - Japanese Yen (¥)</option>
+                                            <option value="CNY">CNY - Chinese Yuan (¥)</option>
+                                            <option value="INR">INR - Indian Rupee (₹)</option>
+                                            <option value="BRL">BRL - Brazilian Real (R$)</option>
+                                            <option value="MXN">MXN - Mexican Peso ($)</option>
+                                            <option value="RUB">RUB - Russian Ruble (₽)</option>
+                                            <option value="CHF">CHF - Swiss Franc (CHF)</option>
+                                            <option value="SEK">SEK - Swedish Krona (kr)</option>
+                                            <option value="NOK">NOK - Norwegian Krone (kr)</option>
+                                            <option value="DKK">DKK - Danish Krone (kr)</option>
+                                            <option value="PLN">PLN - Polish Złoty (zł)</option>
+                                            <option value="CZK">CZK - Czech Koruna (Kč)</option>
+                                            <option value="HUF">HUF - Hungarian Forint (Ft)</option>
+                                            <option value="RON">RON - Romanian Leu (lei)</option>
+                                            <option value="BGN">BGN - Bulgarian Lev (лв)</option>
+                                            <option value="HRK">HRK - Croatian Kuna (kn)</option>
+                                            <option value="TRY">TRY - Turkish Lira (₺)</option>
+                                            <option value="ILS">ILS - Israeli Shekel (₪)</option>
+                                            <option value="SAR">SAR - Saudi Riyal (﷼)</option>
+                                            <option value="AED">AED - UAE Dirham (د.إ)</option>
+                                            <option value="THB">THB - Thai Baht (฿)</option>
+                                            <option value="SGD">SGD - Singapore Dollar (S$)</option>
+                                            <option value="MYR">MYR - Malaysian Ringgit (RM)</option>
+                                            <option value="PHP">PHP - Philippine Peso (₱)</option>
+                                            <option value="IDR">IDR - Indonesian Rupiah (Rp)</option>
+                                            <option value="VND">VND - Vietnamese Dong (₫)</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Tax Rate (%)</label>
+                                        <input type="number" value="10" step="0.1" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Payment Terms</label>
+                                        <select class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500">
+                                            <option>Upon receipt</option>
+                                            <option>Net 15</option>
+                                            <option>Net 30</option>
+                                            <option>Net 60</option>
+                                        </select>
+                                    </div>
+                                    <div class="flex items-center">
+                                        <input type="checkbox" id="autoNumber" class="mr-2" checked>
+                                        <label for="autoNumber" class="text-sm text-gray-700">Auto-generate invoice numbers</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="space-y-6">
+                            <!-- User Profile -->
+                            <div class="bg-white rounded-xl shadow-sm p-6 fade-in">
+                                <h3 class="text-xl font-semibold text-gray-800 mb-6">User Profile</h3>
+                                <div class="text-center mb-6">
+                                    <img src="https://picsum.photos/seed/avatar/80/80.jpg" alt="Profile" class="w-20 h-20 rounded-full mx-auto mb-4">
+                                    <button class="text-blue-600 hover:text-blue-700 text-sm font-medium">Change Photo</button>
+                                </div>
+                                <div class="space-y-4">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Full Name</label>
+                                        <input type="text" value="John Doe" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                                        <input type="email" value="john@example.com" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Password</label>
+                                        <button class="w-full px-4 py-2 border border-gray-300 rounded-lg text-left text-gray-700 hover:bg-gray-50">Change Password</button>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Save Button -->
+                            <div class="fade-in">
+                                <button class="w-full btn-primary px-6 py-3 text-white font-medium rounded-lg">
+                                    <i class="fas fa-save mr-2"></i>Save Changes
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+    </div>
+    
+    <script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
+    <script>
+        // Netlify Identity configuration
+        let netlifyIdentity = null;
+        
+        // Authentication variables
+        let currentUser = null;
+        let authToken = null;
+        const API_BASE_URL = '/api';
+        
+        // Authentication functions
+        function showLogin() {
+            document.getElementById('loginForm').classList.remove('hidden');
+            document.getElementById('signupForm').classList.add('hidden');
+            hideAuthMessage();
+        }
+        
+        function showSignup() {
+            document.getElementById('loginForm').classList.add('hidden');
+            document.getElementById('signupForm').classList.remove('hidden');
+            hideAuthMessage();
+        }
+        
+        function showAuthMessage(message, isError = false) {
+            const messageEl = document.getElementById('authMessage');
+            messageEl.textContent = message;
+            messageEl.className = `rounded-lg p-4 text-center ${isError ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`;
+            messageEl.classList.remove('hidden');
+        }
+        
+        function hideAuthMessage() {
+            document.getElementById('authMessage').classList.add('hidden');
+        }
+        
+        function showMainApp() {
+            document.getElementById('authContainer').classList.add('hidden');
+            document.getElementById('mainApp').classList.remove('hidden');
+        }
+        
+        function showAuthContainer() {
+            document.getElementById('authContainer').classList.remove('hidden');
+            document.getElementById('mainApp').classList.add('hidden');
+        }
+        
+        // Initialize Netlify Identity
+        function initializeNetlifyIdentity() {
+            if (window.netlifyIdentity) {
+                netlifyIdentity = window.netlifyIdentity;
+                
+                // Listen for auth changes
+                netlifyIdentity.on('login', (user) => {
+                    console.log('Login event:', user);
+                    currentUser = user;
+                    authToken = user.token.access_token;
+                    localStorage.setItem('authToken', authToken);
+                    localStorage.setItem('currentUser', JSON.stringify(currentUser));
+                    showMainApp();
+                    initializeApp();
+                });
+                
+                netlifyIdentity.on('logout', () => {
+                    console.log('Logout event');
+                    currentUser = null;
+                    authToken = null;
+                    localStorage.removeItem('authToken');
+                    localStorage.removeItem('currentUser');
+                    showAuthContainer();
+                    showLogin();
+                });
+                
+                netlifyIdentity.on('init', (user) => {
+                    console.log('Init event:', user);
+                    if (user) {
+                        currentUser = user;
+                        authToken = user.token.access_token;
+                        localStorage.setItem('authToken', authToken);
+                        localStorage.setItem('currentUser', JSON.stringify(currentUser));
+                        showMainApp();
+                        initializeApp();
+                    }
+                });
+                
+                // Initialize
+                netlifyIdentity.init();
+            }
+        }
+        
+        // Login form submission
+        document.getElementById('loginFormElement').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+            
+            try {
+                const user = await netlifyIdentity.login(email, password);
+                showAuthMessage('Login successful!', false);
+            } catch (error) {
+                showAuthMessage(error.message || 'Login failed', true);
+            }
+        });
+        
+        // Signup form submission
+        document.getElementById('signupFormElement').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const name = document.getElementById('signupName').value;
+            const companyName = document.getElementById('signupCompany').value;
+            const email = document.getElementById('signupEmail').value;
+            const password = document.getElementById('signupPassword').value;
+            
+            try {
+                // First signup with Netlify Identity
+                const user = await netlifyIdentity.signup(email, password);
+                
+                // Then save additional profile data to our database
+                const response = await fetch(`${API_BASE_URL}/auth/register`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${user.token.access_token}`
+                    },
+                    body: JSON.stringify({ name, companyName, email, password })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    showAuthMessage('Account created successfully!', false);
+                } else {
+                    showAuthMessage(data.error || 'Registration failed', true);
+                }
+            } catch (error) {
+                showAuthMessage(error.message || 'Registration failed', true);
+            }
+        });
+        
+        // Logout function
+        async function logout() {
+            if (netlifyIdentity) {
+                netlifyIdentity.logout();
+            }
+        }
+        
+        // Check if user is already logged in
+        async function checkAuthStatus() {
+            if (netlifyIdentity && netlifyIdentity.currentUser()) {
+                currentUser = netlifyIdentity.currentUser();
+                authToken = currentUser.token.access_token;
+                localStorage.setItem('authToken', authToken);
+                localStorage.setItem('currentUser', JSON.stringify(currentUser));
+                showMainApp();
+                initializeApp();
+            }
+        }
+        
+        // Initialize app after login
+        function initializeApp() {
+            // Update user info in sidebar
+            if (currentUser) {
+                const userNameEl = document.querySelector('.text-sm.font-medium.text-gray-700');
+                const userEmailEl = document.querySelector('.text-xs.text-gray-500');
+                const name = currentUser.user_metadata?.full_name || currentUser.email?.split('@')[0] || 'User';
+                const email = currentUser.email;
+                
+                if (userNameEl) userNameEl.textContent = name;
+                if (userEmailEl) userEmailEl.textContent = email;
+            }
+            
+            // Initialize the rest of the app
+            initializeInvoiceApp();
+        }
+        
+        // Netlify invoice functions
+        async function saveInvoice(invoiceData) {
+            try {
+                const response = await fetch(`${API_BASE_URL}/invoices`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify(invoiceData)
+                });
+                
+                if (!response.ok) throw new Error('Failed to save invoice');
+                return await response.json();
+            } catch (error) {
+                console.error('Error saving invoice:', error);
+                throw error;
+            }
+        }
+        
+        async function getUserInvoices() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/invoices`, {
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+                
+                if (!response.ok) throw new Error('Failed to fetch invoices');
+                return await response.json();
+            } catch (error) {
+                console.error('Error fetching invoices:', error);
+                throw error;
+            }
+        }
+        
+        // Initialize Netlify Identity and check auth status on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            initializeNetlifyIdentity();
+            checkAuthStatus();
+        });
+        // Initialize the invoice app (existing functionality)
+        function initializeInvoiceApp() {
+        const currentDateEl = document.getElementById('currentDate');
+        if (currentDateEl) {
+            currentDateEl.textContent = new Date().toLocaleDateString('en-US', { 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric' 
+            });
+        }
+        
+        // Company logo management
+        let companyLogo = localStorage.getItem('companyLogo') || null;
+        let selectedCurrency = localStorage.getItem('selectedCurrency') || getCurrencyByCountry();
+        
+        // Country to currency mapping
+        function getCurrencyByCountry() {
+            const countryCurrencyMap = {
+                'US': 'USD',
+                'GB': 'GBP', 
+                'DE': 'EUR',
+                'FR': 'EUR',
+                'IT': 'EUR',
+                'ES': 'EUR',
+                'NL': 'EUR',
+                'BE': 'EUR',
+                'AT': 'EUR',
+                'PT': 'EUR',
+                'IE': 'EUR',
+                'FI': 'EUR',
+                'GR': 'EUR',
+                'GH': 'GHS',
+                'NG': 'NGN',
+                'KE': 'KES',
+                'ZA': 'ZAR',
+                'CA': 'CAD',
+                'AU': 'AUD',
+                'JP': 'JPY',
+                'CN': 'CNY',
+                'IN': 'INR',
+                'BR': 'BRL',
+                'MX': 'MXN',
+                'RU': 'RUB',
+                'CH': 'CHF',
+                'SE': 'SEK',
+                'NO': 'NOK',
+                'DK': 'DKK',
+                'PL': 'PLN',
+                'CZ': 'CZK',
+                'HU': 'HUF',
+                'RO': 'RON',
+                'BG': 'BGN',
+                'HR': 'HRK',
+                'TR': 'TRY',
+                'IL': 'ILS',
+                'SA': 'SAR',
+                'AE': 'AED',
+                'TH': 'THB',
+                'SG': 'SGD',
+                'MY': 'MYR',
+                'PH': 'PHP',
+                'ID': 'IDR',
+                'VN': 'VND'
+            };
+            
+            // Try to get user's country from browser locale
+            const locale = navigator.language || navigator.userLanguage;
+            const countryCode = locale.split('-')[1] || locale.split('_')[1];
+            
+            // If country is detected and in our map, use its currency
+            if (countryCode && countryCurrencyMap[countryCode]) {
+                return countryCurrencyMap[countryCode];
+            }
+            
+            // Fallback: try to detect from timezone
+            try {
+                const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+                const timeZoneCountryMap = {
+                    'America/New_York': 'USD',
+                    'America/Chicago': 'USD', 
+                    'America/Denver': 'USD',
+                    'America/Los_Angeles': 'USD',
+                    'Europe/London': 'GBP',
+                    'Europe/Berlin': 'EUR',
+                    'Europe/Paris': 'EUR',
+                    'Europe/Rome': 'EUR',
+                    'Europe/Madrid': 'EUR',
+                    'Europe/Amsterdam': 'EUR',
+                    'Europe/Brussels': 'EUR',
+                    'Europe/Vienna': 'EUR',
+                    'Europe/Lisbon': 'EUR',
+                    'Europe/Dublin': 'EUR',
+                    'Europe/Helsinki': 'EUR',
+                    'Europe/Athens': 'EUR',
+                    'Africa/Accra': 'GHS',
+                    'Africa/Lagos': 'NGN',
+                    'Africa/Nairobi': 'KES',
+                    'Africa/Johannesburg': 'ZAR',
+                    'Asia/Tokyo': 'JPY',
+                    'Asia/Shanghai': 'CNY',
+                    'Asia/Kolkata': 'INR',
+                    'Asia/Singapore': 'SGD',
+                    'Asia/Bangkok': 'THB',
+                    'Asia/Kuala_Lumpur': 'MYR',
+                    'Asia/Manila': 'PHP',
+                    'Asia/Jakarta': 'IDR',
+                    'Asia/Ho_Chi_Minh': 'VND'
+                };
+                
+                if (timeZoneCountryMap[timeZone]) {
+                    return timeZoneCountryMap[timeZone];
+                }
+            } catch (e) {
+                console.log('Could not detect timezone');
+            }
+            
+            // Final fallback - detect from common currency patterns
+            if (locale.includes('en-US') || locale.includes('US')) return 'USD';
+            if (locale.includes('en-GB') || locale.includes('UK')) return 'GBP';
+            if (locale.includes('fr') || locale.includes('de') || locale.includes('it') || locale.includes('es') || 
+                locale.includes('nl') || locale.includes('pt') || locale.includes('IE') || locale.includes('FI')) return 'EUR';
+            if (locale.includes('en-GH') || locale.includes('GH')) return 'GHS';
+            
+            // Default to USD if no detection works
+            return 'USD';
+        }
+        
+        // Currency symbols
+        const currencySymbols = {
+            'USD': '$',
+            'EUR': '€',
+            'GBP': '£',
+            'GHS': '₵',
+            'NGN': '₦',
+            'KES': 'KSh',
+            'ZAR': 'R',
+            'CAD': 'C$',
+            'AUD': 'A$',
+            'JPY': '¥',
+            'CNY': '¥',
+            'INR': '₹',
+            'BRL': 'R$',
+            'MXN': '$',
+            'RUB': '₽',
+            'CHF': 'CHF',
+            'SEK': 'kr',
+            'NOK': 'kr',
+            'DKK': 'kr',
+            'PLN': 'zł',
+            'CZK': 'Kč',
+            'HUF': 'Ft',
+            'RON': 'lei',
+            'BGN': 'лв',
+            'HRK': 'kn',
+            'TRY': '₺',
+            'ILS': '₪',
+            'SAR': '﷼',
+            'AED': 'د.إ',
+            'THB': '฿',
+            'SGD': 'S$',
+            'MYR': 'RM',
+            'PHP': '₱',
+            'IDR': 'Rp',
+            'VND': '₫'
+        };
+        
+        // Settings logo upload functionality
+        const settingsLogoUpload = document.getElementById('settingsLogoUpload');
+        const settingsLogoPreview = document.getElementById('settingsLogoPreview');
+        
+        if (settingsLogoUpload && settingsLogoPreview) {
+            settingsLogoUpload.addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (file && file.type.startsWith('image/')) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        companyLogo = e.target.result;
+                        localStorage.setItem('companyLogo', companyLogo);
+                        
+                        const logoHtml = `<img src="${companyLogo}" alt="Company Logo" class="w-full h-full object-contain rounded-lg">`;
+                        settingsLogoPreview.innerHTML = logoHtml;
+                        
+                        // Update all invoice previews
+                        updateInvoiceLogo();
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+        }
+        
+        // Currency selection functionality
+        const currencySelect = document.getElementById('currencySelect');
+        if (currencySelect) {
+            // Set saved currency
+            currencySelect.value = selectedCurrency;
+            
+            currencySelect.addEventListener('change', function() {
+                selectedCurrency = this.value;
+                localStorage.setItem('selectedCurrency', selectedCurrency);
+                updateCurrencySymbols();
+            });
+        }
+        
+        // Update currency symbols in invoice preview
+        function updateCurrencySymbols() {
+            const symbol = currencySymbols[selectedCurrency] || '$';
+            
+            // Update price headers in table
+            const priceHeaders = document.querySelectorAll('.invoice-preview th:nth-child(3), .invoice-preview th:nth-child(4)');
+            priceHeaders.forEach(header => {
+                if (header.textContent.includes('Price')) {
+                    header.textContent = 'Price (' + symbol + ')';
+                } else if (header.textContent.includes('Total')) {
+                    header.textContent = 'Total (' + symbol + ')';
+                }
+            });
+            
+            // Update delivery currency symbol
+            const deliveryCurrencySymbol = document.getElementById('deliveryCurrencySymbol');
+            if (deliveryCurrencySymbol) {
+                deliveryCurrencySymbol.textContent = symbol;
+            }
+            
+            // Update all calculated amounts
+            updatePreview();
+        }
+        
+        // Load saved logo on page load
+        function loadSavedLogo() {
+            if (companyLogo) {
+                const logoHtml = `<img src="${companyLogo}" alt="Company Logo" class="w-full h-full object-contain rounded-lg">`;
+                
+                // Update settings preview
+                if (settingsLogoPreview) {
+                    settingsLogoPreview.innerHTML = logoHtml;
+                }
+                
+                // Update invoice preview
+                updateInvoiceLogo();
+            }
+        }
+        
+        // Update logo in invoice preview
+        function updateInvoiceLogo() {
+            const invoiceLogo = document.querySelector('.invoice-preview .w-16.h-16');
+            if (invoiceLogo) {
+                if (companyLogo) {
+                    invoiceLogo.innerHTML = `<img src="${companyLogo}" alt="Company Logo" class="w-full h-full object-contain rounded-lg">`;
+                } else {
+                    invoiceLogo.innerHTML = '<i class="fas fa-building text-gray-500 text-2xl"></i>';
+                }
+            }
+        }
+        
+        // Settings save functionality
+        const saveButton = document.querySelector('button:has(.fa-save)');
+        if (saveButton) {
+            saveButton.addEventListener('click', function() {
+                saveSettings();
+            });
+        }
+        
+        function saveSettings() {
+            // Save company information
+            const companyName = document.querySelector('input[value="Your Company"]');
+            const companyEmail = document.querySelector('input[type="email"]');
+            const companyAddress = document.querySelector('textarea');
+            const companyPhone = document.querySelector('input[type="tel"]');
+            const companyWebsite = document.querySelector('input[type="url"]');
+            
+            const companyInfo = {
+                name: companyName ? companyName.value : 'Your Company',
+                email: companyEmail ? companyEmail.value : 'contact@yourcompany.com',
+                address: companyAddress ? companyAddress.value : '123 Business Street\nCity, State 12345',
+                phone: companyPhone ? companyPhone.value : '+1 (555) 000-0000',
+                website: companyWebsite ? companyWebsite.value : 'www.yourcompany.com'
+            };
+            
+            // Save invoice settings
+            const currencySelect = document.getElementById('currencySelect');
+            const taxRateInput = document.querySelector('input[type="number"]');
+            const paymentTermsSelect = document.querySelectorAll('select')[1];
+            const autoNumberCheckbox = document.getElementById('autoNumber');
+            
+            const invoiceSettings = {
+                currency: currencySelect ? currencySelect.value : 'USD',
+                taxRate: taxRateInput ? parseFloat(taxRateInput.value) : 10,
+                paymentTerms: paymentTermsSelect ? paymentTermsSelect.value : 'Upon receipt',
+                autoNumber: autoNumberCheckbox ? autoNumberCheckbox.checked : true
+            };
+            
+            // Save user profile
+            const userName = document.querySelector('input[value="John Doe"]');
+            const userEmail = document.querySelectorAll('input[type="email"]')[1];
+            
+            const userProfile = {
+                name: userName ? userName.value : 'John Doe',
+                email: userEmail ? userEmail.value : 'john@example.com'
+            };
+            
+            // Save all settings to localStorage
+            localStorage.setItem('companyInfo', JSON.stringify(companyInfo));
+            localStorage.setItem('invoiceSettings', JSON.stringify(invoiceSettings));
+            localStorage.setItem('userProfile', JSON.stringify(userProfile));
+            
+            // Update global variables
+            selectedCurrency = invoiceSettings.currency;
+            localStorage.setItem('selectedCurrency', selectedCurrency);
+            
+            // Update invoice with new company info
+            updateInvoiceCompanyInfo(companyInfo);
+            
+            // Update currency symbols
+            updateCurrencySymbols();
+            
+            // Show success message
+            showSaveConfirmation();
+        }
+        
+        function updateInvoiceCompanyInfo(companyInfo) {
+            // Update company info in invoice preview
+            const companyInfoSection = document.querySelector('.invoice-preview .mb-8:nth-of-type(2)');
+            if (companyInfoSection) {
+                companyInfoSection.innerHTML = `
+                    <h5 class="font-semibold text-gray-800 mb-2">From:</h5>
+                    <p class="text-gray-600">${companyInfo.name}</p>
+                    <p class="text-gray-600">${companyInfo.address.replace(/\n/g, '<br>')}</p>
+                    <p class="text-gray-600">${companyInfo.email}</p>
+                    <p class="text-gray-600">${companyInfo.phone}</p>
+                    <p class="text-gray-600">${companyInfo.website}</p>
+                `;
+            }
+        }
+        
+        function showSaveConfirmation() {
+            // Create and show success message
+            const successMessage = document.createElement('div');
+            successMessage.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 flex items-center space-x-2';
+            successMessage.innerHTML = `
+                <i class="fas fa-check-circle"></i>
+                <span>Settings saved successfully!</span>
+            `;
+            document.body.appendChild(successMessage);
+            
+            // Remove message after 3 seconds
+            setTimeout(() => {
+                successMessage.remove();
+            }, 3000);
+        }
+        
+        function loadSavedSettings() {
+            // Load company information
+            const savedCompanyInfo = localStorage.getItem('companyInfo');
+            if (savedCompanyInfo) {
+                const companyInfo = JSON.parse(savedCompanyInfo);
+                
+                const companyName = document.querySelector('input[value="Your Company"]');
+                const companyEmail = document.querySelector('input[type="email"]');
+                const companyAddress = document.querySelector('textarea');
+                const companyPhone = document.querySelector('input[type="tel"]');
+                const companyWebsite = document.querySelector('input[type="url"]');
+                
+                if (companyName) companyName.value = companyInfo.name;
+                if (companyEmail) companyEmail.value = companyInfo.email;
+                if (companyAddress) companyAddress.value = companyInfo.address;
+                if (companyPhone) companyPhone.value = companyInfo.phone;
+                if (companyWebsite) companyWebsite.value = companyInfo.website;
+                
+                updateInvoiceCompanyInfo(companyInfo);
+            }
+            
+            // Load invoice settings
+            const savedInvoiceSettings = localStorage.getItem('invoiceSettings');
+            if (savedInvoiceSettings) {
+                const invoiceSettings = JSON.parse(savedInvoiceSettings);
+                
+                const currencySelect = document.getElementById('currencySelect');
+                const taxRateInput = document.querySelector('input[type="number"]');
+                const paymentTermsSelect = document.querySelectorAll('select')[1];
+                const autoNumberCheckbox = document.getElementById('autoNumber');
+                
+                if (currencySelect) currencySelect.value = invoiceSettings.currency;
+                if (taxRateInput) taxRateInput.value = invoiceSettings.taxRate;
+                if (paymentTermsSelect) paymentTermsSelect.value = invoiceSettings.paymentTerms;
+                if (autoNumberCheckbox) autoNumberCheckbox.checked = invoiceSettings.autoNumber;
+                
+                selectedCurrency = invoiceSettings.currency;
+                localStorage.setItem('selectedCurrency', selectedCurrency);
+            }
+            
+            // Load user profile
+            const savedUserProfile = localStorage.getItem('userProfile');
+            if (savedUserProfile) {
+                const userProfile = JSON.parse(savedUserProfile);
+                
+                const userName = document.querySelector('input[value="John Doe"]');
+                const userEmail = document.querySelectorAll('input[type="email"]')[1];
+                
+                if (userName) userName.value = userProfile.name;
+                if (userEmail) userEmail.value = userProfile.email;
+            }
+        }
+        
+        // Initialize logo on page load
+        loadSavedLogo();
+        
+        // Initialize currency symbols on page load
+        updateCurrencySymbols();
+        
+        // Load saved settings on page load
+        loadSavedSettings();
+        
+        // Mobile menu functionality
+        function toggleSidebar() {
+            const sidebar = document.querySelector('.sidebar');
+            const overlay = document.querySelector('.overlay');
+            
+            if (sidebar.classList.contains('open')) {
+                closeSidebar();
+            } else {
+                sidebar.classList.add('open');
+                overlay.classList.add('show');
+            }
+        }
+        
+        function closeSidebar() {
+            const sidebar = document.querySelector('.sidebar');
+            const overlay = document.querySelector('.overlay');
+            
+            sidebar.classList.remove('open');
+            overlay.classList.remove('show');
+        }
+        
+        // Close sidebar when clicking on navigation items (mobile)
+        document.querySelectorAll('.sidebar-item').forEach(item => {
+            item.addEventListener('click', function() {
+                if (window.innerWidth <= 768) {
+                    closeSidebar();
+                }
+            });
+        });
+        
+        // Handle window resize
+        window.addEventListener('resize', function() {
+            if (window.innerWidth > 768) {
+                closeSidebar();
+            }
+        });
+        
+        // Live preview updates - only if elements exist
+        const invoiceNumberEl = document.getElementById('invoiceNumber');
+        const previewInvoiceNumberEl = document.getElementById('previewInvoiceNumber');
+        if (invoiceNumberEl && previewInvoiceNumberEl) {
+            invoiceNumberEl.addEventListener('input', function() {
+                previewInvoiceNumberEl.textContent = '#' + this.value;
+            });
+        }
+        
+        const clientNameEl = document.getElementById('clientName');
+        const clientEmailEl = document.getElementById('clientEmail');
+        const clientAddressEl = document.getElementById('clientAddress');
+        if (clientNameEl) clientNameEl.addEventListener('input', updateBillTo);
+        if (clientEmailEl) clientEmailEl.addEventListener('input', updateBillTo);
+        if (clientAddressEl) clientAddressEl.addEventListener('input', updateBillTo);
+        
+        function updateBillTo() {
+            const previewBillToEl = document.getElementById('previewBillTo');
+            if (!previewBillToEl) return;
+            
+            const name = document.getElementById('clientName')?.value || 'Client Name';
+            const email = document.getElementById('clientEmail')?.value;
+            const address = document.getElementById('clientAddress')?.value || 'Client Address';
+            
+            let billToHTML = `<p class="text-gray-600">${name}</p>`;
+            if (email) billToHTML += `<p class="text-gray-600">${email}</p>`;
+            billToHTML += `<p class="text-gray-600">${address}</p>`;
+            
+            previewBillToEl.innerHTML = billToHTML;
+        }
+        
+        const notesEl = document.getElementById('notes');
+        const previewNotesEl = document.getElementById('previewNotes');
+        if (notesEl && previewNotesEl) {
+            notesEl.addEventListener('input', function() {
+                previewNotesEl.textContent = this.value || 'Thank you for your business!';
+            });
+        }
+        
+        // Item management
+        function addItem() {
+            const container = document.getElementById('itemsContainer');
+            const newItem = document.createElement('div');
+            newItem.className = 'item-row grid grid-cols-12 gap-3';
+            newItem.innerHTML = `
+                <input type="text" placeholder="Description" class="invoice-field col-span-6 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none">
+                <input type="number" placeholder="Qty" class="invoice-field col-span-2 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none">
+                <input type="number" placeholder="Price" class="invoice-field col-span-3 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none">
+                <button type="button" onclick="removeItem(this)" class="col-span-1 text-red-500 hover:text-red-700">
+                    <i class="fas fa-trash"></i>
+                </button>
+            `;
+            container.appendChild(newItem);
+            
+            // Add event listeners to new inputs
+            newItem.querySelectorAll('input').forEach(input => {
+                input.addEventListener('input', updatePreview);
+            });
+        }
+        
+        function removeItem(button) {
+            const rows = document.querySelectorAll('.item-row');
+            if (rows.length > 1) {
+                button.closest('.item-row').remove();
+                updatePreview();
+            }
+        }
+        
+        // Update preview when items change - only if elements exist
+        const itemInputs = document.querySelectorAll('.item-row input');
+        itemInputs.forEach(input => {
+            input.addEventListener('input', updatePreview);
+        });
+        
+        // Add event listeners for tax and delivery controls
+        const enableTaxCheckbox = document.getElementById('enableTax');
+        const taxRateInput = document.getElementById('taxRate');
+        const enableDeliveryCheckbox = document.getElementById('enableDelivery');
+        const deliveryFeeInput = document.getElementById('deliveryFee');
+        
+        if (enableTaxCheckbox) {
+            enableTaxCheckbox.addEventListener('change', updatePreview);
+        }
+        if (taxRateInput) {
+            taxRateInput.addEventListener('input', updatePreview);
+        }
+        if (enableDeliveryCheckbox) {
+            enableDeliveryCheckbox.addEventListener('change', updatePreview);
+        }
+        if (deliveryFeeInput) {
+            deliveryFeeInput.addEventListener('input', updatePreview);
+        }
+        
+        function updatePreview() {
+            // Only run preview update if we're on the dashboard page
+            const dashboardPage = document.getElementById('dashboard-page');
+            if (!dashboardPage || !dashboardPage.classList.contains('active')) {
+                return;
+            }
+            
+            const rows = document.querySelectorAll('.item-row');
+            let subtotal = 0;
+            let itemsHTML = '';
+            const symbol = currencySymbols[selectedCurrency] || '$';
+            
+            rows.forEach(row => {
+                const textInput = row.querySelector('input[type="text"]');
+                const qtyInput = row.querySelector('input[type="number"]:nth-of-type(1)');
+                const priceInput = row.querySelector('input[type="number"]:nth-of-type(2)');
+                
+                const description = textInput ? textInput.value || 'Item description' : 'Item description';
+                const qty = qtyInput ? parseFloat(qtyInput.value) || 0 : 0;
+                const price = priceInput ? parseFloat(priceInput.value) || 0 : 0;
+                const total = qty * price;
+                subtotal += total;
+                
+                itemsHTML += `
+                    <tr class="border-b border-gray-200">
+                        <td class="py-3 text-gray-600">${description}</td>
+                        <td class="py-3 text-center text-gray-600">${qty}</td>
+                        <td class="py-3 text-right text-gray-600">${symbol}${price.toFixed(2)}</td>
+                        <td class="py-3 text-right text-gray-600">${symbol}${total.toFixed(2)}</td>
+                    </tr>
+                `;
+            });
+            
+            if (itemsHTML === '') {
+                itemsHTML = `
+                    <tr class="border-b border-gray-200">
+                        <td class="py-3 text-gray-600">Item description</td>
+                        <td class="py-3 text-center text-gray-600">1</td>
+                        <td class="py-3 text-right text-gray-600">${symbol}0.00</td>
+                        <td class="py-3 text-right text-gray-600">${symbol}0.00</td>
+                    </tr>
+                `;
+            }
+            
+            const previewItems = document.getElementById('previewItems');
+            if (previewItems) {
+                previewItems.innerHTML = itemsHTML;
+            }
+            
+            // Calculate tax and delivery
+            const enableTax = document.getElementById('enableTax');
+            const taxRateInput = document.getElementById('taxRate');
+            const enableDelivery = document.getElementById('enableDelivery');
+            const deliveryFeeInput = document.getElementById('deliveryFee');
+            
+            let tax = 0;
+            let delivery = 0;
+            let total = subtotal;
+            
+            // Calculate tax if enabled
+            if (enableTax && enableTax.checked) {
+                const taxRate = taxRateInput ? parseFloat(taxRateInput.value) || 0 : 0;
+                tax = subtotal * (taxRate / 100);
+                total += tax;
+            }
+            
+            // Add delivery fee if enabled
+            if (enableDelivery && enableDelivery.checked) {
+                delivery = deliveryFeeInput ? parseFloat(deliveryFeeInput.value) || 0 : 0;
+                total += delivery;
+            }
+            
+            // Update subtotal
+            const subtotalEl = document.getElementById('subtotal');
+            if (subtotalEl) subtotalEl.textContent = symbol + subtotal.toFixed(2);
+            
+            // Update tax display
+            const taxRow = document.getElementById('taxRow');
+            const taxEl = document.getElementById('tax');
+            const taxRateDisplay = document.getElementById('taxRateDisplay');
+            
+            if (enableTax && enableTax.checked) {
+                if (taxRow) taxRow.style.display = 'flex';
+                if (taxEl) taxEl.textContent = symbol + tax.toFixed(2);
+                if (taxRateDisplay) taxRateDisplay.textContent = taxRateInput ? taxRateInput.value : '10';
+            } else {
+                if (taxRow) taxRow.style.display = 'none';
+            }
+            
+            // Update delivery display
+            const deliveryRow = document.getElementById('deliveryRow');
+            const deliveryEl = document.getElementById('delivery');
+            
+            if (enableDelivery && enableDelivery.checked) {
+                if (deliveryRow) deliveryRow.style.display = 'flex';
+                if (deliveryEl) deliveryEl.textContent = symbol + delivery.toFixed(2);
+            } else {
+                if (deliveryRow) deliveryRow.style.display = 'none';
+            }
+            
+            // Update total
+            const totalEl = document.getElementById('total');
+            if (totalEl) totalEl.textContent = symbol + total.toFixed(2);
+        }
+        
+        // Initialize preview
+        updatePreview();
+        
+        // Navigation functionality
+        function navigateToPage(pageName) {
+            console.log('Navigating to:', pageName);
+            
+            // Hide all pages
+            document.querySelectorAll('.page-content').forEach(page => {
+                page.classList.remove('active');
+            });
+            
+            // Remove active class from all sidebar items
+            document.querySelectorAll('.sidebar-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            
+            // Show selected page
+            const targetPage = document.getElementById(pageName + '-page');
+            console.log('Looking for page:', pageName + '-page');
+            console.log('Found page:', targetPage);
+            
+            if (targetPage) {
+                targetPage.classList.add('active');
+                console.log('Page activated successfully');
+                
+                // Update invoice logo when navigating to dashboard
+                if (pageName === 'dashboard') {
+                    setTimeout(() => {
+                        updateInvoiceLogo();
+                        updateCurrencySymbols();
+                    }, 100);
+                }
+                
+                // Load settings when navigating to settings page
+                if (pageName === 'settings') {
+                    setTimeout(loadSavedSettings, 100);
+                }
+            } else {
+                console.error('Page not found:', pageName + '-page');
+            }
+            
+            // Add active class to selected sidebar item
+            const targetSidebarItem = document.querySelector(`[data-page="${pageName}"]`);
+            if (targetSidebarItem) {
+                targetSidebarItem.classList.add('active');
+                console.log('Sidebar item activated for:', pageName);
+            }
+            
+            // Update page title
+            updatePageTitle(pageName);
+        }
+        
+        function updatePageTitle(pageName) {
+            const titles = {
+                'dashboard': 'Invoice Generator',
+                'invoices': 'Invoices',
+                'clients': 'Clients',
+                'settings': 'Settings'
+            };
+            
+            const descriptions = {
+                'dashboard': 'Create and manage your professional invoices',
+                'invoices': 'Manage all your invoices in one place',
+                'clients': 'Manage your client database',
+                'settings': 'Manage your account and application preferences'
+            };
+            
+            // Update title and description if they exist
+            const titleElement = document.querySelector('#' + pageName + '-page h2');
+            const descElement = document.querySelector('#' + pageName + '-page p');
+            
+            if (titleElement && titles[pageName]) {
+                titleElement.textContent = titles[pageName];
+            }
+            
+            if (descElement && descriptions[pageName]) {
+                descElement.textContent = descriptions[pageName];
+            }
+        }
+        
+        // Setup navigation - make sure DOM is loaded
+        function setupNavigation() {
+            console.log('Setting up navigation...');
+            
+            document.querySelectorAll('.sidebar-item').forEach(item => {
+                item.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const pageName = this.getAttribute('data-page');
+                    console.log('Sidebar clicked:', pageName);
+                    if (pageName) {
+                        navigateToPage(pageName);
+                    }
+                });
+            });
+            
+            console.log('Navigation setup complete');
+        }
+        
+        // Setup navigation when DOM is ready
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', setupNavigation);
+        } else {
+            setupNavigation();
+        }
+        } // Close initializeInvoiceApp function
+    </script>
+</body>
+</html>
