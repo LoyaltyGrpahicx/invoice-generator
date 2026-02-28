@@ -1109,8 +1109,19 @@ City, State 12345</textarea>
                             initializeApp();
                         }, 1000);
                     } else {
-                        const errorData = await response.json();
-                        showAuthMessage(errorData.error_description || 'Login failed', true);
+                        let errorMessage = 'Login failed';
+                        try {
+                            const errorData = await response.json();
+                            errorMessage = errorData.error_description || errorData.error || errorMessage;
+                        } catch (e) {
+                            // If we can't parse JSON, the response might be HTML (404 page)
+                            if (response.status === 404) {
+                                errorMessage = 'Service not available. Please try again.';
+                            } else {
+                                errorMessage = `Server error: ${response.status}`;
+                            }
+                        }
+                        showAuthMessage(errorMessage, true);
                     }
                 } catch (error) {
                     showAuthMessage(error.message || 'Login failed', true);
@@ -1156,20 +1167,38 @@ City, State 12345</textarea>
                             body: JSON.stringify({ name, companyName, email, password })
                         });
                         
-                        const profileData = await profileResponse.json();
-                        
                         if (profileResponse.ok) {
                             showAuthMessage('Account created successfully!', false);
+                            // Auto-login after successful registration
+                            currentUser = data;
+                            authToken = data.access_token;
+                            localStorage.setItem('authToken', authToken);
+                            localStorage.setItem('currentUser', JSON.stringify(currentUser));
                             setTimeout(() => {
                                 showMainApp();
                                 initializeApp();
                             }, 1000);
                         } else {
-                            showAuthMessage(profileData.error || 'Registration failed', true);
+                            // Profile save failed, but user was created
+                            showAuthMessage('Account created! You can now log in.', false);
+                            setTimeout(() => {
+                                showLogin();
+                            }, 2000);
                         }
                     } else {
-                        const errorData = await response.json();
-                        showAuthMessage(errorData.error_description || 'Registration failed', true);
+                        let errorMessage = 'Registration failed';
+                        try {
+                            const errorData = await response.json();
+                            errorMessage = errorData.error_description || errorData.error || errorMessage;
+                        } catch (e) {
+                            // If we can't parse JSON, the response might be HTML (404 page)
+                            if (response.status === 404) {
+                                errorMessage = 'Service not available. Please try again.';
+                            } else {
+                                errorMessage = `Server error: ${response.status}`;
+                            }
+                        }
+                        showAuthMessage(errorMessage, true);
                     }
                 } catch (error) {
                     showAuthMessage(error.message || 'Registration failed', true);
