@@ -9,13 +9,11 @@
     "build": "echo 'No build step needed'",
     "functions:serve": "netlify functions:serve"
   },
-  "dependencies": {
-    "mongodb": "^6.3.0"
-  },
+  "dependencies": {},
   "devDependencies": {
     "netlify-cli": "^17.0.0"
   },
-  "keywords": ["invoice", "netlify", "mongodb", "authentication"],
+  "keywords": ["invoice", "netlify", "authentication"],
   "author": "",
   "license": "MIT"
 }

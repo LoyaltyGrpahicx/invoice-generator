@@ -1,35 +1,62 @@
-const { MongoClient } = require('mongodb');
+const fs = require('fs').promises;
+const path = require('path');
 
-// MongoDB connection
-const client = new MongoClient(process.env.MONGODB_URI);
-let db;
+// Simple JSON file storage
+const DATA_DIR = '/tmp';
+const USERS_FILE = path.join(DATA_DIR, 'users.json');
+const INVOICES_FILE = path.join(DATA_DIR, 'invoices.json');
 
-async function connectToDatabase() {
-  if (!db) {
-    await client.connect();
-    db = client.db('invoice-generator');
+// Initialize data files
+async function initDataFiles() {
+  try {
+    await fs.mkdir(DATA_DIR, { recursive: true });
+    
+    try {
+      await fs.access(USERS_FILE);
+    } catch {
+      await fs.writeFile(USERS_FILE, JSON.stringify({}));
+    }
+    
+    try {
+      await fs.access(INVOICES_FILE);
+    } catch {
+      await fs.writeFile(INVOICES_FILE, JSON.stringify({}));
+    }
+  } catch (error) {
+    console.error('Error initializing data files:', error);
   }
-  return db;
+}
+
+async function readData(filename) {
+  try {
+    const data = await fs.readFile(filename, 'utf8');
+    return JSON.parse(data);
+  } catch {
+    return {};
+  }
+}
+
+async function writeData(filename, data) {
+  await fs.writeFile(filename, JSON.stringify(data, null, 2));
 }
 
 exports.handler = async (event, context) => {
   const { httpMethod, path, body } = event;
   
   try {
-    await connectToDatabase();
-    const database = db;
+    await initDataFiles();
     
     // Handle different routes
     if (path === '/api/auth/login' && httpMethod === 'POST') {
-      return await handleLogin(JSON.parse(body), database);
+      return await handleLogin(JSON.parse(body));
     } else if (path === '/api/auth/register' && httpMethod === 'POST') {
-      return await handleRegister(JSON.parse(body), database);
+      return await handleRegister(JSON.parse(body));
     } else if (path === '/api/invoices' && httpMethod === 'POST') {
-      return await handleSaveInvoice(JSON.parse(body), context, database);
+      return await handleSaveInvoice(JSON.parse(body), context);
     } else if (path === '/api/invoices' && httpMethod === 'GET') {
-      return await handleGetInvoices(context, database);
+      return await handleGetInvoices(context);
     } else if (path === '/api/user/profile' && httpMethod === 'GET') {
-      return await handleGetProfile(context, database);
+      return await handleGetProfile(context);
     }
     
     return { statusCode: 404, body: 'Not found' };
@@ -39,9 +66,9 @@ exports.handler = async (event, context) => {
   }
 };
 
-async function handleLogin({ email }, database) {
-  const users = database.collection('users');
-  const user = await users.findOne({ email });
+async function handleLogin({ email }) {
+  const users = await readData(USERS_FILE);
+  const user = users[email];
   
   if (!user) {
     return { statusCode: 401, body: JSON.stringify({ error: 'Invalid credentials' }) };
@@ -51,7 +78,7 @@ async function handleLogin({ email }, database) {
     statusCode: 200,
     body: JSON.stringify({ 
       user: { 
-        id: user._id, 
+        id: user.id, 
         email: user.email, 
         name: user.name,
         companyName: user.companyName 
@@ -60,59 +87,68 @@ async function handleLogin({ email }, database) {
   };
 }
 
-async function handleRegister({ name, companyName, email }, database) {
-  const users = database.collection('users');
+async function handleRegister({ name, companyName, email }) {
+  const users = await readData(USERS_FILE);
   
   // Check if user exists
-  const existingUser = await users.findOne({ email });
-  if (existingUser) {
+  if (users[email]) {
     return { statusCode: 400, body: JSON.stringify({ error: 'User already exists' }) };
   }
   
   // Create user
-  const result = await users.insertOne({
+  const newUser = {
+    id: Date.now().toString(),
     name,
     companyName,
     email,
-    createdAt: new Date()
-  });
+    createdAt: new Date().toISOString()
+  };
+  
+  users[email] = newUser;
+  await writeData(USERS_FILE, users);
   
   return {
     statusCode: 201,
     body: JSON.stringify({
-      user: { id: result.insertedId, email, name, companyName }
+      user: newUser
     })
   };
 }
 
-async function handleSaveInvoice(invoiceData, context, database) {
+async function handleSaveInvoice(invoiceData, context) {
   const user = context.clientContext.user;
   if (!user) {
     return { statusCode: 401, body: JSON.stringify({ error: 'Unauthorized' }) };
   }
   
-  const invoices = database.collection('invoices');
-  const result = await invoices.insertOne({
+  const invoices = await readData(INVOICES_FILE);
+  const invoiceId = Date.now().toString();
+  
+  const newInvoice = {
+    id: invoiceId,
     ...invoiceData,
     userId: user.sub,
-    createdAt: new Date(),
-    updatedAt: new Date()
-  });
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  };
+  
+  invoices[invoiceId] = newInvoice;
+  await writeData(INVOICES_FILE, invoices);
   
   return {
     statusCode: 201,
-    body: JSON.stringify({ invoiceId: result.insertedId })
+    body: JSON.stringify({ invoiceId })
   };
 }
 
-async function handleGetInvoices(context, database) {
+async function handleGetInvoices(context) {
   const user = context.clientContext.user;
   if (!user) {
     return { statusCode: 401, body: JSON.stringify({ error: 'Unauthorized' }) };
   }
   
-  const invoices = database.collection('invoices');
-  const userInvoices = await invoices.find({ userId: user.sub }).toArray();
+  const invoices = await readData(INVOICES_FILE);
+  const userInvoices = Object.values(invoices).filter(invoice => invoice.userId === user.sub);
   
   return {
     statusCode: 200,
@@ -120,14 +156,14 @@ async function handleGetInvoices(context, database) {
   };
 }
 
-async function handleGetProfile(context, database) {
+async function handleGetProfile(context) {
   const user = context.clientContext.user;
   if (!user) {
     return { statusCode: 401, body: JSON.stringify({ error: 'Unauthorized' }) };
   }
   
-  const users = database.collection('users');
-  const userProfile = await users.findOne({ email: user.email });
+  const users = await readData(USERS_FILE);
+  const userProfile = users[user.email];
   
   if (!userProfile) {
     return { statusCode: 404, body: JSON.stringify({ error: 'User not found' }) };
@@ -136,7 +172,7 @@ async function handleGetProfile(context, database) {
   return {
     statusCode: 200,
     body: JSON.stringify({
-      id: userProfile._id,
+      id: userProfile.id,
       email: userProfile.email,
       name: userProfile.name,
       companyName: userProfile.companyName,
