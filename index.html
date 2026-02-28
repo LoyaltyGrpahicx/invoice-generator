@@ -1035,8 +1035,43 @@ City, State 12345</textarea>
             const password = document.getElementById('loginPassword').value;
             
             try {
-                const user = await netlifyIdentity.login(email, password);
-                showAuthMessage('Login successful!', false);
+                // Use Netlify Identity API directly
+                const response = await fetch('/.netlify/identity/token', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        grant_type: 'password',
+                        username: email,
+                        password: password
+                    })
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    // Get user info
+                    const userResponse = await fetch('/.netlify/identity/user', {
+                        headers: {
+                            'Authorization': `Bearer ${data.access_token}`
+                        }
+                    });
+                    const userData = await userResponse.json();
+                    
+                    currentUser = userData;
+                    authToken = data.access_token;
+                    localStorage.setItem('authToken', authToken);
+                    localStorage.setItem('currentUser', JSON.stringify(currentUser));
+                    
+                    showAuthMessage('Login successful!', false);
+                    setTimeout(() => {
+                        showMainApp();
+                        initializeApp();
+                    }, 1000);
+                } else {
+                    const errorData = await response.json();
+                    showAuthMessage(errorData.error_description || 'Login failed', true);
+                }
             } catch (error) {
                 showAuthMessage(error.message || 'Login failed', true);
             }
@@ -1052,25 +1087,49 @@ City, State 12345</textarea>
             const password = document.getElementById('signupPassword').value;
             
             try {
-                // First signup with Netlify Identity
-                const user = await netlifyIdentity.signup(email, password);
-                
-                // Then save additional profile data to our database
-                const response = await fetch(`${API_BASE_URL}/auth/register`, {
+                // First signup with Netlify Identity API
+                const response = await fetch('/.netlify/identity/signup', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${user.token.access_token}`
                     },
-                    body: JSON.stringify({ name, companyName, email, password })
+                    body: JSON.stringify({
+                        email: email,
+                        password: password,
+                        data: {
+                            full_name: name,
+                            company_name: companyName
+                        }
+                    })
                 });
                 
-                const data = await response.json();
-                
                 if (response.ok) {
-                    showAuthMessage('Account created successfully!', false);
+                    const data = await response.json();
+                    
+                    // Save additional profile data to our database
+                    const profileResponse = await fetch(`${API_BASE_URL}/auth/register`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${data.access_token}`
+                        },
+                        body: JSON.stringify({ name, companyName, email, password })
+                    });
+                    
+                    const profileData = await profileResponse.json();
+                    
+                    if (profileResponse.ok) {
+                        showAuthMessage('Account created successfully!', false);
+                        setTimeout(() => {
+                            showMainApp();
+                            initializeApp();
+                        }, 1000);
+                    } else {
+                        showAuthMessage(profileData.error || 'Registration failed', true);
+                    }
                 } else {
-                    showAuthMessage(data.error || 'Registration failed', true);
+                    const errorData = await response.json();
+                    showAuthMessage(errorData.error_description || 'Registration failed', true);
                 }
             } catch (error) {
                 showAuthMessage(error.message || 'Registration failed', true);
@@ -1079,9 +1138,25 @@ City, State 12345</textarea>
         
         // Logout function
         async function logout() {
-            if (netlifyIdentity) {
-                netlifyIdentity.logout();
+            try {
+                // Call Netlify Identity logout API
+                await fetch('/.netlify/identity/logout', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+            } catch (error) {
+                console.log('Logout API error:', error);
             }
+            
+            // Clear local state
+            currentUser = null;
+            authToken = null;
+            localStorage.removeItem('authToken');
+            localStorage.removeItem('currentUser');
+            showAuthContainer();
+            showLogin();
         }
         
         // Check if user is already logged in
